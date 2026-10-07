@@ -1,0 +1,734 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Solkatt — Reflective Learning Coach</title>
+    <style>
+      :root { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #020617; color: #f1f5f9; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { min-height: 100vh; }
+      .glow { position: fixed; inset: 0 0 auto 0; height: 220px; background: linear-gradient(to bottom, rgba(245,158,11,0.12), transparent); pointer-events: none; }
+      header { position: relative; max-width: 1120px; margin: 0 auto; padding: 28px 16px 14px; display: flex; align-items: center; gap: 14px; }
+      .logo { width: 48px; height: 48px; border-radius: 16px; background: linear-gradient(135deg, #fbbf24, #f97316); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 8px 24px rgba(245,158,11,0.25); }
+      h1 { font-size: 22px; letter-spacing: -0.02em; }
+      h1 span { color: #fbbf24; }
+      .sub { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+      .free-note { margin-left: auto; font-size: 11px; color: #34d399; border: 1px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
+      main { position: relative; max-width: 1120px; margin: 0 auto; padding: 0 16px 32px; display: grid; grid-template-columns: 232px minmax(0,1fr) 252px; gap: 16px; align-items: start; }
+      @media (max-width: 1020px) { main { grid-template-columns: 1fr; } .free-note { display: none; } }
+      .card { background: rgba(15,23,42,0.6); border: 1px solid #1e293b; border-radius: 16px; padding: 14px; }
+      .card h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 10px; font-weight: 600; }
+      aside { display: flex; flex-direction: column; gap: 14px; }
+      .flow { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+      .flow li { display: flex; gap: 10px; padding: 8px 10px; border-radius: 12px; border: 1px solid transparent; }
+      .flow li.active { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+      .dot { width: 20px; height: 20px; min-width: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; background: #1e293b; color: #64748b; margin-top: 1px; }
+      .flow li.done .dot { background: rgba(52,211,153,0.2); color: #34d399; }
+      .flow li.active .dot { background: #f59e0b; color: #1e293b; }
+      .flow .flabel { font-size: 13px; font-weight: 500; color: #64748b; }
+      .flow li.active .flabel { color: #fde68a; }
+      .flow li.done .flabel { color: #e2e8f0; }
+      .flow .fdesc { font-size: 11px; color: #64748b; }
+      .badge { display: inline-block; padding: 4px 10px; border-radius: 10px; background: rgba(245,158,11,0.15); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); font-size: 13px; font-weight: 500; }
+      .muted { color: #64748b; font-size: 13px; }
+      .tiny { color: #64748b; font-size: 11px; margin-top: 8px; }
+      .concepts ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+      .concepts .cname { font-size: 13px; color: #e2e8f0; }
+      .concepts .carea { font-size: 11px; color: #38bdf8; }
+      button.reset { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #334155; background: rgba(30,41,59,0.6); color: #e2e8f0; font-size: 13px; font-weight: 500; cursor: pointer; }
+      button.reset:hover { background: rgba(51,65,85,0.6); }
+      #chatwrap { background: rgba(15,23,42,0.4); border: 1px solid #1e293b; border-radius: 16px; display: flex; flex-direction: column; min-height: 70vh; max-height: 85vh; }
+      #msgs { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+      .row { display: flex; gap: 10px; }
+      .row.student { justify-content: flex-end; }
+      .avatar { width: 32px; height: 32px; min-width: 32px; border-radius: 999px; background: linear-gradient(135deg, #fbbf24, #f97316); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+      .bubble { max-width: 85%; border-radius: 16px; border-top-left-radius: 4px; padding: 12px 16px; font-size: 14px; line-height: 1.6; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); color: #f1f5f9; white-space: pre-wrap; }
+      .row.student .bubble { background: rgba(99,102,241,0.15); border-color: rgba(129,140,248,0.25); color: #eef2ff; border-radius: 16px; border-top-right-radius: 4px; border-top-left-radius: 16px; }
+      .chip { display: inline-block; margin-top: 8px; font-size: 11px; color: #7dd3fc; background: rgba(14,165,233,0.15); border: 1px solid rgba(14,165,233,0.3); border-radius: 10px; padding: 3px 8px; cursor: help; }
+      .levelcard { width: 100%; }
+      .levelcard .lt { font-size: 13px; font-weight: 600; color: #fde68a; margin-bottom: 8px; }
+      .lvl { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 8px 12px; margin-bottom: 6px; border-radius: 12px; border: 1px solid #334155; background: rgba(30,41,59,0.5); color: inherit; font: inherit; cursor: pointer; }
+      .lvl:hover { border-color: rgba(245,158,11,0.5); }
+      .lvl .l1 { font-size: 13px; font-weight: 600; color: #f1f5f9; }
+      .lvl .l2 { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+      .lvl.chosen { border-color: #fbbf24; background: rgba(245,158,11,0.2); }
+      .lvl.dim { opacity: 0.5; }
+      .summary { max-width: 94%; width: 100%; border-color: rgba(52,211,153,0.3) !important; background: rgba(52,211,153,0.06) !important; padding: 18px !important; white-space: normal !important; }
+      .summary h3 { font-size: 15px; color: #6ee7b7; margin-bottom: 12px; }
+      .summary h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #fcd34d; margin: 14px 0 6px; }
+      .summary p { font-size: 13px; color: #cbd5e1; margin-bottom: 8px; line-height: 1.6; }
+      .summary .lbl { color: #64748b; }
+      .nabcbox { background: rgba(2,6,23,0.6); border: 1px solid rgba(51,65,85,0.6); border-radius: 12px; padding: 8px 12px; margin-bottom: 8px; }
+      .nabcbox .k { color: #34d399; font-weight: 700; font-size: 13px; }
+      .nabcbox .kl { color: #94a3b8; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-left: 6px; }
+      .nabcbox p { margin: 2px 0 0; }
+      .takeaway { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; padding: 12px 16px; }
+      .takeaway p { color: #fef3c7; font-style: italic; }
+      .typing { display: flex; gap: 6px; align-items: center; padding: 16px; }
+      .typing i { width: 8px; height: 8px; border-radius: 999px; background: #fbbf24; animation: bounce 1.2s infinite; display: block; }
+      .typing i:nth-child(2) { animation-delay: 0.15s; }
+      .typing i:nth-child(3) { animation-delay: 0.3s; }
+      @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+      #composer { border-top: 1px solid #1e293b; padding: 12px; display: flex; gap: 8px; }
+      #composer textarea { flex: 1; resize: none; border-radius: 12px; border: 1px solid #334155; background: #0f172a; color: #f1f5f9; padding: 10px 14px; font: inherit; font-size: 14px; }
+      #composer textarea:focus { outline: none; border-color: rgba(245,158,11,0.6); }
+      #composer button { border: none; border-radius: 12px; background: linear-gradient(135deg, #fbbf24, #f97316); color: #1e293b; font-weight: 600; font-size: 14px; padding: 10px 18px; cursor: pointer; }
+      #composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+      details.internals { border: 1px solid #1e293b; background: rgba(15,23,42,0.6); border-radius: 16px; }
+      details.internals summary { padding: 12px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; font-weight: 600; cursor: pointer; }
+      .irows { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; }
+      .irow { display: flex; justify-content: space-between; gap: 8px; }
+      .irow span:first-child { color: #64748b; }
+      .irow span:last-child { color: #e2e8f0; font-weight: 500; }
+      .inote { color: #64748b; font-size: 11px; line-height: 1.6; }
+      .rules { list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 11px; color: #94a3b8; line-height: 1.55; }
+      .rules .ph { color: #fcd34d; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="glow"></div>
+    <header>
+      <div class="logo">☀️</div>
+      <div>
+        <h1>Solkatt <span>— Reflective Learning Coach</span></h1>
+        <div class="sub">Idea development · Mirror → Challenger → Coach · NABC value propositions &amp; opportunity recognition</div>
+      </div>
+      <div class="free-note">Free · offline · no account needed</div>
+    </header>
+
+    <main>
+      <aside>
+        <div class="card">
+          <h2>Conversation flow</h2>
+          <ul class="flow" id="flow"></ul>
+        </div>
+        <div class="card">
+          <h2>Support level</h2>
+          <div id="levelBox"><span class="muted">Not selected yet.</span></div>
+          <div class="tiny" id="qCount"></div>
+        </div>
+        <div class="card concepts">
+          <h2>Concepts introduced</h2>
+          <div id="conceptBox"><span class="muted">None yet — Solkatt brings them in when they fit your reflection.</span></div>
+        </div>
+        <button class="reset" onclick="reset()">↺ New reflection</button>
+      </aside>
+
+      <section id="chatwrap">
+        <div id="msgs"></div>
+        <form id="composer" onsubmit="return false;">
+          <textarea id="draft" rows="2" placeholder="Write your reflection here — in your own words…"></textarea>
+          <button id="sendBtn" onclick="submitDraft()">Send</button>
+        </form>
+      </section>
+
+      <aside>
+        <details class="internals" open>
+          <summary>How Solkatt works</summary>
+          <div class="irows">
+            <div class="irow"><span>Phase</span><span id="iPhase">opening</span></div>
+            <div class="irow"><span>Question in phase</span><span id="iQ">—</span></div>
+            <p class="inote">Solkatt is a rule-based reflection coach. <b>Mirror</b> revisits your early thinking around the problem and the solution you imagined. <b>Challenger</b> questions your value proposition — the need, the benefit, and the competition (NABC, Carlson &amp; Wilmot, SRI International). <b>Coach</b> helps you regulate and refine your thinking around Need, Approach, Benefit and Competition, so your idea can grow into a genuine entrepreneurial opportunity (opportunity recognition: Shane &amp; Venkataraman, 2000).</p>
+          </div>
+        </details>
+        <div class="card">
+          <h2>Phase design</h2>
+          <ul class="rules">
+            <li>• <span class="ph">Mirror</span>: the problem you saw, the solution you imagined, and where the idea came from</li>
+            <li>• <span class="ph">Challenger</span>: questioning need, benefit per cost, and competition — the NABC ingredients of your value proposition</li>
+            <li>• <span class="ph">Coach</span>: NABC self-regulation — test the need, refine the approach, state the benefit, evaluate against alternatives</li>
+            <li>• One question at a time; depth feedback, no generic praise; one re-scaffolding retry</li>
+            <li>• Final summary built only from your own words</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h2>Free for everyone</h2>
+          <p class="inote">Solkatt runs entirely in your browser — no server, no AI account, no API costs. Save this page and open it anytime, or share the link with classmates.</p>
+        </div>
+      </aside>
+    </main>
+
+    <script>
+/* ============================================================
+   Solkatt — Reflective Learning Coach (standalone, rule-based)
+   Redesigned around idea development & opportunity recognition:
+   - MIRROR: early thoughts on the problem and potential solution
+   - CHALLENGER: questioning the value propositions & benefits
+   - COACH: NABC-driven self-regulation (Need, Approach, Benefit,
+     Competition) to refine the solution toward an opportunity
+   Grounded in: Carlson & Wilmot (SRI) NABC value propositions;
+   Shane & Venkataraman (2000) opportunity recognition.
+   ============================================================ */
+
+var QB = {
+  /* MIRROR — early idea development: problem + potential solution */
+  mirror1: { id: "mirror1", focus: "the problem you set out to solve",
+    base: "Looking back at the idea development — what problem did your group set out to solve, and what made you think it mattered to someone?",
+    starter: "The problem we saw was… / We thought it mattered because…",
+    hint: "Name who experiences the problem and why it is a pain for them, not just what the problem is technically.",
+    alt: "What need did your idea respond to, and why did it seem important?" },
+  mirror2: { id: "mirror2", focus: "the potential solution you imagined",
+    base: "And what was the potential solution you imagined — how did you think it would address that problem?",
+    starter: "Our idea was to… / We imagined it would help by…",
+    hint: "Describe the solution as you first pictured it, even if it changed later — what would it do, and for whom?",
+    alt: "How did you picture the solution working when the idea first took shape?" },
+  mirror3: { id: "mirror3", focus: "where the idea came from",
+    base: "Where did the idea come from — what experience, knowledge, or observation led you (or a teammate) to connect this problem with that solution?",
+    starter: "The idea came from…",
+    hint: "Research on opportunity recognition shows ideas grow from prior knowledge — things you'd done, seen, or read before. What was the seed here?",
+    alt: "What did you draw on when the idea was forming?" },
+  mirror4: { id: "mirror4", focus: "what happened when the idea met reality",
+    base: "What happened as you worked on the idea — where did reality diverge from what you expected about the problem or the solution?",
+    starter: "We expected…, but what happened was…",
+    hint: "For example: the problem turned out different than described, users reacted unexpectedly, or the solution was harder to build than thought.",
+    alt: "Where did the idea surprise you?" },
+
+  /* CHALLENGER — questioning value propositions & benefits */
+  challenger1: { id: "challenger1", focus: "how strong the need really is",
+    base: "NABC starts with Need: how important and frequent is this problem for the people who have it — is it an annoying itch, or a pain they would pay to be rid of?",
+    starter: "For them, the need is…",
+    hint: "A value proposition is only as strong as its need. If the need is weak or rare, even a brilliant solution has no opportunity attached to it.",
+    alt: "How real and pressing is this need for the people who have it?" },
+  challenger2: { id: "challenger2", focus: "the benefits your approach actually delivers",
+    base: "Now the Benefit: what concrete benefit does your approach deliver to the person with the need — and how does it compare to the cost and effort of getting it? Try to state the benefit per cost, not just the benefit.",
+    starter: "The benefit is… compared to the cost of…",
+    hint: "SRI's NABC stresses quantitative benefits — faster, cheaper, better by how much, for whom? A benefit you can't state concretely is hard for a customer to believe.",
+    alt: "What does the user actually gain, relative to what they give up?" },
+  challenger3: { id: "challenger3", focus: "competition and alternatives",
+    base: "And the Competition: how do the people with this need solve it today? What makes your approach a better answer than those alternatives — including doing nothing?",
+    starter: "Today they…, and our approach differs by…",
+    hint: "Competition includes the status quo. Most new ideas lose to 'the way things already work', not to another start-up.",
+    alt: "What are the existing alternatives, and why would someone switch to yours?" },
+  challenger4: { id: "challenger4", focus: "where your value proposition stands now",
+    base: "After testing need, benefit and competition — where does your value proposition stand now? What has changed, been refined, or been reinforced?",
+    starter: "Our value proposition now reads…",
+    hint: "There is no right answer: it may have sharpened, narrowed to a smaller group, or survived the test intact. Say it in your own words.",
+    alt: "After this questioning, how do you now describe the value in your idea?" },
+
+  /* COACH — NABC-driven self-regulation */
+  coach1: { id: "coach1", focus: "one concrete action on the Need",
+    base: "Bearing all of that in mind — what is ONE concrete action you could take to test or deepen your understanding of the Need: who has it, how strongly, and how often?",
+    starter: "Next time, I will…",
+    hint: "NABC thinking says needs are settled by contact with real people: an interview, an observation, a small survey. What could you actually do in your next project?",
+    alt: "If you were starting again tomorrow, how would you test the need before building anything?" },
+  coach2: { id: "coach2", focus: "refining the Approach",
+    base: "What would you do to refine your Approach — how would you adjust the solution so it answers the need more directly? What will you monitor while developing it to keep the approach on target?",
+    starter: "I would refine the approach by…, and watch for…",
+    hint: "Regulate your thinking: define a signal that tells you the approach is drifting from the need — for example, feedback you expect to hear, or a change you expect to see.",
+    alt: "How would you keep the solution tied to the need while you build it?" },
+  coach3: { id: "coach3", focus: "stating and monitoring the Benefit",
+    base: "How will you state the Benefit per cost concretely — and what evidence would show your solution really delivers that benefit: faster, cheaper, or better by how much, for whom?",
+    starter: "The benefit is… and I will know it is real if…",
+    hint: "Pick observable evidence: something a user does, says, or pays that shows the benefit is real, not just claimed.",
+    alt: "What would count as evidence that your solution's benefit is real?" },
+  coach4: { id: "coach4", focus: "evaluating against Competition and alternatives",
+    base: "Finally, Competition: how will you evaluate whether your solution beats the alternatives — what signs would tell you this is a genuine entrepreneurial opportunity worth pursuing, or worth changing?",
+    starter: "I will compare with…, and it is worth pursuing if…",
+    hint: "In opportunity research, recognition is not enough — ideas become opportunities only when they survive evaluation against alternatives. What would make you commit, and what would make you pivot?",
+    alt: "What would tell you your idea has become a real opportunity?" },
+  closing1: { id: "closing1", focus: "your main takeaway",
+    base: "What is the main thing you will take forward from this experience into your future group work and idea development?",
+    starter: "The main thing I take with me is…",
+    hint: "One thing is enough — the one that matters most to you.",
+    alt: "Of everything we've explored, what do you want to carry with you from here?" }
+};
+
+var PHASE_PLANS = {
+  mirror: ["mirror1", "mirror2", "mirror3", "mirror4"],
+  challenger: ["challenger1", "challenger2", "challenger3", "challenger4"],
+  coach: ["coach1", "coach2", "coach3", "coach4"],
+  closing: ["closing1"]
+};
+
+var LEVELS = [
+  { n: 1, name: "Full Guidance", desc: "Simple questions with examples and sentence starters." },
+  { n: 2, name: "Guided Support", desc: "Targeted hints and sub-questions to direct reflection." },
+  { n: 3, name: "Light Support", desc: "Open questions and brief feedback on your thinking." },
+  { n: 4, name: "Socratic", desc: "Pure reflection through open-ended questions." }
+];
+
+var LEVEL_ACK = [
+  "Thank you. I'll guide you closely — with examples and sentence starters — and we'll take it step by step.",
+  "Thank you. I'll give you targeted hints along the way to help direct your thinking.",
+  "Thank you. I'll mostly ask open questions and give brief feedback on your thinking as we go.",
+  "Thank you. I'll ask open questions and let your own thinking lead the way."
+];
+
+var OPENING_MSG =
+  "Hi, and welcome! ☀️ I'm Solkatt, your reflection coach. In this conversation we'll focus on ONE specific challenge from your group project — ideally a moment from your idea development: a problem you tried to solve, an idea that didn't land as expected, or a value proposition that turned out harder to defend than you thought. To start: could you tell me about one challenge you experienced?";
+
+var PHASE_LEADINS = {
+  challenger: "Now let's switch from remembering to questioning. A value proposition — in the NABC tradition from SRI International — is an important need, addressed by a unique approach, with compelling benefits compared to the competition or alternatives. Let's test your idea against those ingredients, one at a time.",
+  coach: "You've now looked at your idea's value proposition critically. In this last part, let's turn that reflection into self-regulation: concrete moves around the four NABC ingredients — Need, Approach, Benefit, Competition — that refine your solution and can turn it into a genuine entrepreneurial opportunity."
+};
+
+var IDEATION_CONCEPTS = {
+  nabc: { id: "nabc", name: "NABC value proposition", area: "SRI / Carlson & Wilmot",
+    short: "Need, Approach, Benefit per cost, Competition — the four ingredients of a complete value proposition",
+    detail: "Developed by Curtis Carlson and William Wilmot at SRI International: a value proposition is an important client or market need, addressed by a unique approach, with compelling (quantitative) benefits per cost compared with the competition or alternatives. All four must be addressed, and the value proposition must be iterated over and over." },
+  priorknowledge: { id: "priorknowledge", name: "Prior knowledge", area: "Opportunity recognition",
+    short: "the experience and information that let one person see an opportunity others walk past",
+    detail: "Shane & Venkataraman (2000) argue opportunity discovery depends on prior knowledge: entrepreneurs spot opportunities at the intersection of what they already know and new information." },
+  alertness: { id: "alertness", name: "Entrepreneurial alertness", area: "Opportunity recognition",
+    short: "a heightened sensitivity to unmet needs and unsolved problems in everyday situations",
+    detail: "Entrepreneurial alertness (Kirzner; Gaglio & Katz) is the cognitive readiness to notice problems, pain points, and workarounds without deliberately searching for them. It can be trained by reflective practice." },
+  loveidea: { id: "loveidea", name: "Falling in love with the idea", area: "NABC pitfall",
+    short: "defending your solution instead of interrogating the user's need",
+    detail: "A documented pitfall in NABC practice (Carlson & Wilmot): teams fall in love with their own solution and stop asking whether the need is important. The discipline is to love the need, not the idea." },
+  evaluation: { id: "evaluation", name: "Discovery → evaluation → exploitation", area: "Opportunity recognition",
+    short: "a recognized idea only becomes an opportunity after it survives critical evaluation",
+    detail: "Shane & Venkataraman (2000): entrepreneurship is about how opportunities to create future goods and services are discovered, evaluated, and exploited. Recognition is necessary but not sufficient — evaluation is where ideas are screened against need, benefit, and alternatives." },
+  leap: { id: "leap", name: "Leap-of-faith assumptions", area: "Lean start-up",
+    short: "assumptions so central that, if they are wrong, everything built on them has to change",
+    detail: "Every new venture rests on a few critical assumptions — usually about value and growth. They must be tested, not debated." },
+  buildmeasure: { id: "buildmeasure", name: "Build–Measure–Learn", area: "Lean start-up",
+    short: "turn ideas into small tests, measure what happens, and let the learning decide the next step",
+    detail: "Build the smallest thing that tests your idea, measure how real customers respond, and learn whether to persevere or change course." },
+  mvp: { id: "mvp", name: "Minimum viable product", area: "Lean start-up",
+    short: "the smallest version of an idea that starts real learning — a prototype, landing page or manual service",
+    detail: "An MVP is not a small finished product; it is a learning instrument." },
+  vpc: { id: "vpc", name: "Value Proposition Canvas", area: "Value propositions",
+    short: "map customer jobs, pains and gains before defending your solution",
+    detail: "Customer jobs are what people try to get done; pains are what blocks them; gains are outcomes they want." },
+  psfit: { id: "psfit", name: "Problem–solution fit", area: "Value propositions",
+    short: "evidence that the problem is real, worth solving, and that your idea actually relieves it",
+    detail: "Before building anything: is this problem frequent and painful for a specific segment, and does our idea relieve it better than existing alternatives?" },
+  decomp: { id: "decomp", name: "Problem decomposition", area: "Managing complexity",
+    short: "split a fuzzy challenge into smaller pieces that can be tested one at a time",
+    detail: "Which segment, which pain, which assumption, which test this week?" },
+  gem: { id: "gem", name: "Get out of the building", area: "Lean start-up",
+    short: "answers about customers are found with real people, not inside the seminar room",
+    detail: "Assumptions are settled by contact with reality: interviews, observations, small tests. Data over debate." }
+};
+
+/* ---------------- Helpers ---------------- */
+
+function esc(t) {
+  return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+function excerpt(text, maxWords) {
+  maxWords = maxWords || 10;
+  var words = text.replace(/\s+/g, " ").trim().split(" ");
+  var cut = words.slice(0, maxWords).join(" ");
+  return words.length > maxWords ? cut + "…" : cut;
+}
+
+function firstSentence(t) {
+  var m = t.match(/[^.!?]+[.!?]?/);
+  return m ? m[0].trim() : t.trim();
+}
+
+function depthFeedback(text, level) {
+  var s = text.toLowerCase();
+  var found = [];
+  if (/need|problem|pain|struggl|difficulty/.test(s)) found.push("which need your idea rests on");
+  if (/assum|expect|believ|took for granted|thought that/.test(s)) found.push("an assumption or expectation you started from");
+  if (/because|since|therefore|so that|the reason/.test(s)) found.push("the reasoning behind your idea");
+  if (/benefit|value|better|cheaper|faster|help|solve/.test(s)) found.push("the benefit you claim for your solution");
+  if (/compet|alternativ|instead of|compare|today they|status quo/.test(s)) found.push("how your idea compares with existing alternatives");
+  if (/\bbut\b|however|although|even though/.test(s)) found.push("a tension between your idea and what you observed");
+  if (/realis|realiz|changed|differently|learned|now i see/.test(s)) found.push("a shift in your understanding");
+
+  var missing = [];
+  if (!/because|since|therefore|so that|the reason|led to|caused|meant/.test(s)) missing.push("the mechanism — what led you to think this");
+  if (!/customer|user|client|student|person|people|someone|they|them/.test(s)) missing.push("who actually has this need or makes this judgment");
+  if (!/\bwe\b|\bi\b|my |our /.test(s)) missing.push("your own role in the thinking");
+
+  var fb = "";
+  if (found.length) {
+    fb += "What your answer makes visible: " + found.slice(0, 2).join(", and ") + ". Especially: “" + excerpt(text) + "”.";
+  } else {
+    fb += "Your answer tells me what happened, but not yet the thinking behind it.";
+  }
+  if (missing.length) fb += " Less clear so far: " + missing.slice(0, 2).join(", and ") + ".";
+  if (level === 1) fb += " There are no wrong answers here — I'm interested in your thinking, not a polished text.";
+  return fb;
+}
+
+function renderQuestion(q, level) {
+  if (level === 1) return q.base + " You can start from something like: “" + (q.starter || "I think…") + "”";
+  if (level === 2) return q.base + " Hint: " + (q.hint || "Write whatever comes to mind first.");
+  return q.base;
+}
+
+function reScaffold(q, level) {
+  var ack = "Thank you for sharing that.";
+  var missing = "I'd like to hear a bit more about " + q.focus + ".";
+  if (level === 1) return ack + " " + missing + " " + q.base + " For example, you could start with: “" + (q.starter || "I think…") + "”";
+  if (level === 2) return ack + " " + missing + " " + q.base + " Hint: " + (q.hint || "Write whatever comes to mind first.");
+  if (level === 3) return ack + " What I'm still missing is " + q.focus + " — a little more of your own thinking. " + q.base;
+  return ack + " Let me put it another way. " + (q.alt || q.base);
+}
+
+function pickLens(challenge) {
+  var s = challenge.toLowerCase();
+  if (/customer|client|user|buyer|student/.test(s)) {
+    return "the value proposition lens: judge the idea from the customer's side — their jobs, pains, and gains — rather than from your team's enthusiasm for the solution";
+  }
+  if (/idea|solution|concept|product|prototype/.test(s)) {
+    return "the 'in love with the idea' lens: the documented NABC pitfall where teams defend their solution instead of interrogating whether the need is important — let's see if your group stayed loyal to the need or to the idea";
+  }
+  if (/group|team|conflict|agree|decide/.test(s)) {
+    return "the evaluation lens: how did your group actually evaluate the idea's value — need, benefit, competition — when you disagreed, and did everyone evaluate the same things?";
+  }
+  return "the opportunity lens: an idea only becomes an opportunity when an important need meets a workable approach with better benefits than the alternatives — let's check each ingredient in what you've described";
+}
+
+function pickConcept(text, E) {
+  var s = text.toLowerCase();
+  var introduced = E.concepts || [];
+  var tryOrder = [];
+  if (/nabc|value proposition|need, approach/.test(s)) tryOrder.push("nabc");
+  if (/where .*(came from|got the idea)|experience|previous|earlier|before|read|saw|noticed/.test(s)) tryOrder.push("priorknowledge");
+  if (/notic|saw that|realis|realiz|opportunit|spotted|wonder why|workaround/.test(s)) tryOrder.push("alertness");
+  if (/love the idea|excited|passionate|convinc|defend|believed in/.test(s)) tryOrder.push("loveidea");
+  if (/evaluate|worth|decide|go for|choose|pursu|commit/.test(s)) tryOrder.push("evaluation");
+  if (/mvp|prototype|landing page|mockup|we built/.test(s)) tryOrder.push("mvp");
+  if (/test|experiment|measure|validate|data/.test(s)) tryOrder.push("buildmeasure");
+  if (/customer|user|client|buyer|segment/.test(s)) tryOrder.push("vpc");
+  if (/assum|took for granted|certain|sure that/.test(s)) tryOrder.push("leap");
+  if (/interview|talk|asked|feedback|spoke/.test(s)) tryOrder.push("gem");
+  if (/problem|need|solution|fit|market/.test(s)) tryOrder.push("psfit");
+  if (/stuck|complex|too big|messy|vague/.test(s)) tryOrder.push("decomp");
+  for (var i = 0; i < tryOrder.length; i++) {
+    if (introduced.indexOf(tryOrder[i]) < 0) return IDEATION_CONCEPTS[tryOrder[i]];
+  }
+  return null;
+}
+
+function conceptFrame(c) {
+  return "In ideation work this is close to " + c.name + " (" + c.area + "): " + c.short + ".";
+}
+
+function freshEngine() {
+  return {
+    phase: "opening", level: null, challenge: "", answers: {},
+    qIdx: 0, rescaffold: false, perspective: "", concepts: []
+  };
+}
+
+function currentPlan(E) { return PHASE_PLANS[E.phase] || []; }
+
+/* ---------------- App state & rendering ---------------- */
+
+var E = freshEngine();
+var msgs = [];
+var busy = false;
+var token = 0;
+
+var PHASE_META = [
+  { id: "opening", label: "Opening", desc: "Challenge & support level" },
+  { id: "mirror", label: "Mirror", desc: "Problem & potential solution" },
+  { id: "challenger", label: "Challenger", desc: "Questioning the value proposition" },
+  { id: "coach", label: "Coach", desc: "NABC · Need, Approach, Benefit, Competition" },
+  { id: "closing", label: "Closing", desc: "Final takeaway" },
+  { id: "summary", label: "Summary", desc: "Reflection & NABC action plan" }
+];
+
+function render() {
+  var order = ["opening", "mirror", "challenger", "coach", "closing", "summary"];
+  var cur = order.indexOf(E.phase);
+  var flow = "";
+  for (var i = 0; i < PHASE_META.length; i++) {
+    var done = i < cur || E.phase === "summary";
+    var active = i === cur && E.phase !== "summary";
+    flow += '<li class="' + (done ? "done" : active ? "active" : "") + '">' +
+      '<span class="dot">' + (done ? "✓" : i + 1) + "</span><div>" +
+      '<div class="flabel">' + PHASE_META[i].label + "</div>" +
+      '<div class="fdesc">' + PHASE_META[i].desc + "</div></div></li>";
+  }
+  document.getElementById("flow").innerHTML = flow;
+
+  document.getElementById("levelBox").innerHTML = E.level
+    ? '<span class="badge">Level ' + E.level + " · " + LEVELS[E.level - 1].name + "</span>"
+    : '<span class="muted">Not selected yet.</span>';
+
+  var planLen = currentPlan(E).length;
+  document.getElementById("qCount").innerHTML =
+    E.phase !== "opening" && E.phase !== "summary"
+      ? "Question " + (E.qIdx + 1) + " of " + planLen + " in this phase (max 4 per phase)."
+      : "";
+  document.getElementById("iPhase").innerHTML = E.phase;
+  document.getElementById("iQ").innerHTML =
+    E.phase === "opening" || E.phase === "summary" ? "—" : (E.qIdx + 1) + " / " + planLen;
+
+  var cb = document.getElementById("conceptBox");
+  if (E.concepts.length) {
+    var html = "<ul>";
+    for (var j = 0; j < E.concepts.length; j++) {
+      var c = IDEATION_CONCEPTS[E.concepts[j]];
+      if (c) {
+        html += '<li title="' + esc(c.detail) + '"><span class="cname">' + esc(c.name) +
+          '</span><br/><span class="carea">' + esc(c.area) + "</span></li>";
+      }
+    }
+    cb.innerHTML = html + "</ul>";
+  } else {
+    cb.innerHTML = '<span class="muted">None yet — Solkatt brings them in when they fit your reflection.</span>';
+  }
+
+  var m = document.getElementById("msgs");
+  var out = "";
+  for (var k = 0; k < msgs.length; k++) {
+    var msg = msgs[k];
+    if (msg.role === "student") {
+      out += '<div class="row student"><div class="bubble">' + esc(msg.text) + "</div></div>";
+    } else if (msg.special === "level") {
+      out += '<div class="row"><div class="avatar">☀️</div><div class="bubble levelcard"><div class="lt">Choose your scaffolding level</div>';
+      for (var n = 0; n < LEVELS.length; n++) {
+        var l = LEVELS[n];
+        var cls = "lvl";
+        if (msg.chosen) cls += l.n === msg.chosen ? " chosen" : " dim";
+        out += '<button class="' + cls + '" ' + (msg.chosen || busy ? "disabled" : "") +
+          ' onclick="chooseLevel(' + l.n + ')"><span class="l1">Level ' + l.n + " — " + esc(l.name) +
+          '</span><span class="l2">' + esc(l.desc) + "</span></button>";
+      }
+      out += "</div></div>";
+    } else if (msg.special === "summary") {
+      var d = msg.data;
+      var nb = function (k2, kl, v) {
+        return '<div class="nabcbox"><span class="k">' + k2 + '</span><span class="kl">' + kl + '</span><p>' + esc(v || "—") + "</p></div>";
+      };
+      out += '<div class="row"><div class="avatar">☀️</div><div class="bubble summary">' +
+        "<h3>📝 Your Reflection &amp; NABC Action Plan</h3>" +
+        "<h4>Your Reflection</h4>" +
+        '<p><span class="lbl">The challenge:</span> ' + esc(d.challenge) + "</p>" +
+        '<p><span class="lbl">The problem you set out to solve:</span> ' + esc(d.initial) + "</p>" +
+        '<p><span class="lbl">The solution you imagined:</span> ' + esc(d.solution) + "</p>" +
+        '<p><span class="lbl">Where the idea came from:</span> ' + esc(d.origin) + "</p>" +
+        "<h4>Your value proposition, questioned</h4>" +
+        '<p><span class="lbl">Need:</span> ' + esc(d.need) + "</p>" +
+        '<p><span class="lbl">Benefit per cost:</span> ' + esc(d.benefit) + "</p>" +
+        '<p><span class="lbl">Competition &amp; alternatives:</span> ' + esc(d.competition) + "</p>" +
+        '<p><span class="lbl">Where it stands now:</span> ' + esc(d.vpNow) + "</p>" +
+        "<h4>Your NABC Action Plan</h4>" +
+        nb("N", "Need", d.actionN) +
+        nb("A", "Approach", d.actionA) +
+        nb("B", "Benefit", d.actionB) +
+        nb("C", "Competition", d.actionC) +
+        '<div class="takeaway"><h4 style="margin:0 0 6px">Takeaway</h4><p>' + esc(d.takeaway || "—") + "</p></div>" +
+        "</div></div>";
+    } else {
+      var chip = msg.concept && IDEATION_CONCEPTS[msg.concept]
+        ? '<span class="chip" title="' + esc(IDEATION_CONCEPTS[msg.concept].detail) + '">📚 ' +
+          esc(IDEATION_CONCEPTS[msg.concept].name) + " · " + esc(IDEATION_CONCEPTS[msg.concept].area) + "</span>"
+        : "";
+      out += '<div class="row"><div class="avatar">☀️</div><div class="bubble">' + esc(msg.text) + chip + "</div></div>";
+    }
+  }
+  if (busy) out += '<div class="row"><div class="avatar">☀️</div><div class="bubble typing"><i></i><i></i><i></i></div></div>';
+  m.innerHTML = out;
+  m.scrollTop = m.scrollHeight;
+}
+
+function introduce(id) {
+  if (E.concepts.indexOf(id) < 0) E.concepts.push(id);
+}
+
+async function coachSay(text, alive, delay, conceptId) {
+  delay = delay || 1000;
+  busy = true;
+  render();
+  await sleep(delay);
+  if (!alive()) return;
+  var msg = { role: "coach", text: text };
+  if (conceptId) msg.concept = conceptId;
+  msgs.push(msg);
+  busy = false;
+  render();
+  await sleep(250);
+}
+
+async function coachSpecial(msg, alive, delay) {
+  busy = true;
+  render();
+  await sleep(delay || 900);
+  if (!alive()) return;
+  msgs.push(msg);
+  busy = false;
+  render();
+}
+
+async function advance(alive) {
+  var lv = E.level || 3;
+  var plan = currentPlan(E);
+
+  if (E.qIdx + 1 < plan.length) {
+    E.qIdx += 1;
+    await coachSay(renderQuestion(QB[plan[E.qIdx]], lv), alive);
+    return;
+  }
+
+  if (E.phase === "mirror") {
+    E.phase = "challenger";
+    E.qIdx = 0;
+    var p = pickLens(E.challenge);
+    E.perspective = p;
+    introduce("nabc");
+    await coachSay(PHASE_LEADINS.challenger, alive, 1000, "nabc");
+    await coachSay("For your idea, let's look through " + p + ".", alive);
+    await coachSay(renderQuestion(QB.challenger1, lv), alive);
+    return;
+  }
+
+  if (E.phase === "challenger") {
+    E.phase = "coach";
+    E.qIdx = 0;
+    introduce("evaluation");
+    await coachSay(PHASE_LEADINS.coach, alive, 1000, "evaluation");
+    await coachSay(renderQuestion(QB.coach1, lv), alive);
+    return;
+  }
+
+  if (E.phase === "coach") {
+    E.phase = "closing";
+    E.qIdx = 0;
+    await coachSay("Before we close, one last reflection question.", alive);
+    await coachSay(renderQuestion(QB.closing1, lv), alive);
+    return;
+  }
+
+  if (E.phase === "closing") {
+    E.phase = "summary";
+    await coachSay(
+      "Thank you for this conversation. Below is a synthesis of your own reflection — everything in it comes from what you have told me.",
+      alive
+    );
+    await coachSpecial(
+      {
+        role: "coach", special: "summary",
+        data: {
+          challenge: E.challenge,
+          initial: E.answers.mirror1 || "",
+          solution: E.answers.mirror2 || "",
+          origin: E.answers.mirror3 || "",
+          need: E.answers.challenger1 || "",
+          benefit: E.answers.challenger2 || "",
+          competition: E.answers.challenger3 || "",
+          vpNow: E.answers.challenger4 || "",
+          actionN: E.answers.coach1 || "",
+          actionA: E.answers.coach2 || "",
+          actionB: E.answers.coach3 || "",
+          actionC: E.answers.coach4 || "",
+          takeaway: firstSentence(E.answers.closing1 || "")
+        }
+      },
+      alive
+    );
+  }
+}
+
+async function respond(text) {
+  var clean = (text || "").trim();
+  if (!clean || busy) return;
+  var myToken = ++token;
+  var alive = function () { return myToken === token; };
+  msgs.push({ role: "student", text: clean });
+  var words = clean.split(/\s+/).length;
+  var lv = E.level || 3;
+  render();
+
+  if (E.phase === "opening" && E.challenge) {
+    await coachSay("Feel free to pick a support level from the options above ☀️ — you can also just tell me if you'd like me to choose for you.", alive);
+    return;
+  }
+
+  if (E.phase === "opening") {
+    if (words < 3 && !E.rescaffold) {
+      E.rescaffold = true;
+      await coachSay(
+        "Thank you for sharing. So that we keep the focus sharp, I'd like to hear about ONE specific challenge from your idea development — a problem, an idea, or a decision that turned out differently than expected. Could you tell me a little more about what happened?",
+        alive
+      );
+      return;
+    }
+    E.challenge = clean;
+    E.rescaffold = false;
+    await coachSay(
+      "Thank you — that's a concrete challenge, and concrete challenges usually reward a closer look. Before we begin: everyone reflects differently, and I'd like to support you in the way that suits you best. How much guidance would you like during this conversation? You can choose a level below — we'll keep it for the whole session.",
+      alive
+    );
+    await coachSpecial({ role: "coach", special: "level" }, alive);
+    return;
+  }
+
+  if (E.phase === "summary") {
+    await coachSay("This reflection round is complete ☀️ If you'd like to explore another challenge, press “New reflection” to start fresh.", alive);
+    return;
+  }
+
+  var plan = currentPlan(E);
+  var q = QB[plan[E.qIdx]];
+
+  if (words < 8 && !E.rescaffold) {
+    E.rescaffold = true;
+    await coachSay(reScaffold(q, lv), alive);
+    return;
+  }
+
+  E.rescaffold = false;
+  E.answers[q.id] = clean;
+
+  var concept = pickConcept(clean, E);
+  var fb = depthFeedback(clean, lv);
+  if (concept) {
+    introduce(concept.id);
+    fb += " " + conceptFrame(concept);
+  }
+  await coachSay(fb, alive, 850, concept ? concept.id : null);
+  await advance(alive);
+}
+
+async function chooseLevel(n) {
+  if (busy) return;
+  if (E.phase !== "opening" || !E.challenge) return;
+  var myToken = ++token;
+  var alive = function () { return myToken === token; };
+
+  for (var i = 0; i < msgs.length; i++) {
+    if (msgs[i].special === "level") msgs[i].chosen = n;
+  }
+  msgs.push({ role: "student", text: "Level " + n + " — " + LEVELS[n - 1].name });
+
+  E.level = n;
+  E.phase = "mirror";
+  E.qIdx = 0;
+  render();
+
+  await coachSay(LEVEL_ACK[n - 1], alive);
+  await coachSay(renderQuestion(QB.mirror1, n), alive);
+}
+
+function reset() {
+  token++;
+  E = freshEngine();
+  msgs = [];
+  busy = false;
+  msgs.push({ role: "coach", text: OPENING_MSG });
+  document.getElementById("draft").value = "";
+  render();
+}
+
+function submitDraft() {
+  var el = document.getElementById("draft");
+  var t = el.value;
+  el.value = "";
+  respond(t);
+}
+
+document.getElementById("draft").addEventListener("keydown", function (e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    submitDraft();
+  }
+});
+
+msgs.push({ role: "coach", text: OPENING_MSG });
+render();
+    </script>
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" nonce="8muk5nQcCjYH/+DVVHAeNg==" data-cf-beacon='{"version":"2024.11.0","token":"36b4216ae2dc4d5488c249161e71fe1e","spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
